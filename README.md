@@ -3,4 +3,5 @@
 - 🪄 Remove image backgrounds
 - 💡 Adjust brightness
 - 🖼️ Replace background
+- 🎞️ GIF Creation
 - 💾 Download results in PNG, JPEG, or JPG formats
