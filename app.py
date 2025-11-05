@@ -3,10 +3,71 @@ from PIL import Image, ImageEnhance
 from rembg import remove
 import io
 
+# --- Custom CSS to limit image preview height safely ---
+st.markdown("""
+    <style>
+    img {
+        max-height: 450px !important;
+        object-fit: contain !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🎨 PhotoCraft – Simple Image Editor")
+
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
+# --- GIF Creation Section ---
+st.sidebar.header("🖼️ Extra Tools")
+create_gif_mode = st.sidebar.checkbox("Create GIF from multiple images")
+
+if create_gif_mode:
+    st.subheader("🎞️ Create an Animated GIF")
+    gif_files = st.file_uploader(
+        "Upload multiple images (in order)",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True
+    )
+
+    if gif_files:
+        images = [Image.open(f).convert("RGBA") for f in gif_files]
+
+        # Optional: resize all images to same height for alignment
+        desired_height = st.slider("Frame height (px)", 100, 1000, 400)
+        resized_images = []
+        for img in images:
+            w, h = img.size
+            new_width = int((desired_height / h) * w)
+            resized = img.resize((new_width, desired_height), Image.LANCZOS)
+            resized_images.append(resized)
+
+        duration = st.slider("Frame duration (ms)", 100, 2000, 500)
+        loop = st.number_input("Loop count (0 = infinite)", 0, 10, 0)
+
+        buf = io.BytesIO()
+        resized_images[0].save(
+            buf,
+            format="GIF",
+            save_all=True,
+            append_images=resized_images[1:],
+            duration=duration,
+            loop=loop
+        )
+        buf.seek(0)
+
+        # ✅ Display preview – clean, aligned, auto-scaled
+        st.image(buf, caption="Preview of your GIF", use_container_width=True)
+        st.download_button(
+            "⬇️ Download GIF",
+            data=buf,
+            file_name="animated.gif",
+            mime="image/gif"
+        )
+
+    st.stop()  # Stop the normal editor when in GIF mode
+
+# --- Main editor (single image) ---
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGBA")
     st.image(img, caption="Original Image", use_container_width=True)
